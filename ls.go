@@ -89,8 +89,9 @@ func (c *lsCommand) Run(args []string) int {
 	go io.Copy(os.Stdout, cmd.Stdout)
 	go io.Copy(os.Stderr, cmd.Stderr)
 	cmd.Wait()
+	cmd.Close()
 
-	return 0
+	return cmd.ExitCode()
 }
 
 func friendlyPath(path string) string {
