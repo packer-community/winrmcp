@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -35,7 +36,6 @@ func (c *lsCommand) Synopsis() string {
 }
 
 func (c *lsCommand) Run(args []string) int {
-	var addr string
 	var user string
 	var pass string
 
@@ -43,7 +43,7 @@ func (c *lsCommand) Run(args []string) int {
 	flags.Usage = func() { c.ui.Output(c.Help()) }
 	flags.StringVar(&user, "user", "", "auth name")
 	flags.StringVar(&pass, "pass", "", "auth password")
-	addrFlag(flags)
+	addr := addrFlag(flags)
 
 	if err := flags.Parse(args); err != nil {
 		return 1
@@ -62,19 +62,45 @@ func (c *lsCommand) Run(args []string) int {
 	}
 
 	dir := args[0]
-	endpoint, err := parseEndpoint(addr)
+	endpoint, err := parseEndpoint(*addr)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}
 
 	client := winrm.NewClient(endpoint, user, pass)
-	format := "Format-Table -Property Attributes,LastWriteTime,Length,Name -AutoSize"
-	command := fmt.Sprintf(`powershell -Command "Get-ChildItem '%s' | %s`, dir, format)
-	if err := client.Run(command, os.Stdout, os.Stderr); err != nil {
+	shell, err := client.CreateShell()
+
+	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}
 
+	defer shell.Close()
+	cmd, err := shell.Execute("powershell", "Get-ChildItem", friendlyPath(dir))
+	//cmd, err := shell.Execute("powershell", "Get-ChildItem", dir, "|Format-Table -Property Attributes,LastWriteTime,Length,Name -AutoSize")
+	//cmd, err := shell.Execute("powershell",
+	//	fmt.Sprintf("-Command \"Get-ChildItem %s | Format-Table -Property Attributes,LastWriteTime,Length,Name -AutoSize\"", dir))
+	if err != nil {
+		c.ui.Error(err.Error())
+		return 1
+	}
+
+	go io.Copy(os.Stdout, cmd.Stdout)
+	go io.Copy(os.Stderr, cmd.Stderr)
+	cmd.Wait()
+
 	return 0
+}
+
+func friendlyPath(path string) string {
+	if len(path) == 0 {
+		return path
+	}
+
+	if strings.Contains(path, " ") {
+		path = fmt.Sprintf("'%s'", strings.Trim(path, "'\""))
+	}
+
+	return strings.Replace(path, "/", "\\", -1)
 }

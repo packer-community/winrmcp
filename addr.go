@@ -12,11 +12,12 @@ import (
 )
 
 func addrFlag(f *flag.FlagSet) *string {
-	defaultValue := os.Getenv("WINRMFS_ADDR")
-	if defaultValue == "" {
-		defaultValue = "localhost:5985"
+	defaultAddr := os.Getenv("WINRMFS_ADDR")
+	if defaultAddr == "" {
+		defaultAddr = "localhost:5985"
 	}
-	return f.String("addr", defaultValue,
+
+	return f.String("addr", defaultAddr,
 		"Remote address of the target machine")
 }
 
