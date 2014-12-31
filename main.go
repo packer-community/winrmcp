@@ -21,6 +21,12 @@ func main() {
 				ui: ui,
 			}, nil
 		},
+
+		"info": func() (cli.Command, error) {
+			return &infoCommand{
+				ui: ui,
+			}, nil
+		},
 	}
 
 	app := &cli.CLI{
