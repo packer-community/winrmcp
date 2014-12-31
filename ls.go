@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -78,9 +77,6 @@ func (c *lsCommand) Run(args []string) int {
 
 	defer shell.Close()
 	cmd, err := shell.Execute("powershell", "Get-ChildItem", friendlyPath(dir))
-	//cmd, err := shell.Execute("powershell", "Get-ChildItem", dir, "|Format-Table -Property Attributes,LastWriteTime,Length,Name -AutoSize")
-	//cmd, err := shell.Execute("powershell",
-	//	fmt.Sprintf("-Command \"Get-ChildItem %s | Format-Table -Property Attributes,LastWriteTime,Length,Name -AutoSize\"", dir))
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
@@ -92,16 +88,4 @@ func (c *lsCommand) Run(args []string) int {
 	cmd.Close()
 
 	return cmd.ExitCode()
-}
-
-func friendlyPath(path string) string {
-	if len(path) == 0 {
-		return path
-	}
-
-	if strings.Contains(path, " ") {
-		path = fmt.Sprintf("'%s'", strings.Trim(path, "'\""))
-	}
-
-	return strings.Replace(path, "/", "\\", -1)
 }
