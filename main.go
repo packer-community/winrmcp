@@ -15,6 +15,12 @@ func main() {
 				ui: ui,
 			}, nil
 		},
+
+		"cp": func() (cli.Command, error) {
+			return &cpCommand{
+				ui: ui,
+			}, nil
+		},
 	}
 
 	app := &cli.CLI{
