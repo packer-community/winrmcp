@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"io"
-	"os"
+	"fmt"
 	"strings"
 
+	"github.com/dylanmei/winrmfs/winrmfs"
 	"github.com/masterzen/winrm/winrm"
 	"github.com/mitchellh/cli"
 )
@@ -68,24 +68,20 @@ func (c *lsCommand) Run(args []string) int {
 	}
 
 	client := winrm.NewClient(endpoint, user, pass)
-	shell, err := client.CreateShell()
+	fs := winrmfs.New(client)
 
+	list, err := fs.List(dir)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}
 
-	defer shell.Close()
-	cmd, err := shell.Execute("powershell", "Get-ChildItem", friendlyPath(dir))
-	if err != nil {
-		c.ui.Error(err.Error())
-		return 1
+	for _, fi := range list {
+		fmt.Printf("Mode: %s, ", fi.Mode)
+		fmt.Printf("Name: %s, ", fi.Name)
+		fmt.Printf("LastWriteTime: %s, ", fi.LastWriteTime)
+		fmt.Printf("Length: %d\n", fi.Length)
 	}
 
-	go io.Copy(os.Stdout, cmd.Stdout)
-	go io.Copy(os.Stderr, cmd.Stderr)
-	cmd.Wait()
-	cmd.Close()
-
-	return cmd.ExitCode()
+	return 0
 }

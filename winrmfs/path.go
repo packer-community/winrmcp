@@ -1,11 +1,11 @@
-package main
+package winrmfs
 
 import (
 	"fmt"
 	"strings"
 )
 
-func friendlyPath(path string) string {
+func winPath(path string) string {
 	if len(path) == 0 {
 		return path
 	}

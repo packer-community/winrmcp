@@ -24,7 +24,7 @@ func doCopy(client *winrm.Client, fromPath, toPath string) error {
 	defer file.Close()
 	shell, err := client.CreateShell()
 	if err != nil {
-		return errors.New(fmt.Sprintf("Couldn't create shell: %v", fromPath, err))
+		return errors.New(fmt.Sprintf("Couldn't create shell: %v", err))
 	}
 	defer shell.Close()
 

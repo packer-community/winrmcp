@@ -76,7 +76,7 @@ func (c *cpCommand) Run(args []string) int {
 	client := winrm.NewClient(endpoint, user, pass)
 	fs := winrmfs.New(client)
 
-	err = fs.Copy(sourcePath, friendlyPath(remotePath))
+	err = fs.Copy(sourcePath, remotePath)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1

@@ -15,6 +15,9 @@ func (fs *Winrmfs) Info() (*Info, error) {
 }
 
 func (fs *Winrmfs) Copy(fromPath, toPath string) error {
-	return doCopy(fs.client, fromPath, toPath)
+	return doCopy(fs.client, fromPath, winPath(toPath))
 }
 
+func (fs *Winrmfs) List(remotePath string) ([]FileItem, error) {
+	return fetchList(fs.client, winPath(remotePath))
+}
