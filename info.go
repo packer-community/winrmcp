@@ -63,13 +63,20 @@ func (c *infoCommand) Run(args []string) int {
 		return 1
 	}
 
-	c.ui.Output("Auth")
-	c.ui.Output(fmt.Sprintf("\tUser: %s", user))
-	c.ui.Output(fmt.Sprintf("\tBasic: %v", true))
+	c.ui.Output("Client")
+	c.ui.Output(fmt.Sprintf("    Addr: %s:%d", endpoint.Host, endpoint.Port))
+	c.ui.Output(fmt.Sprintf("    Auth: %s", "Basic"))
+	c.ui.Output(fmt.Sprintf("    User: %s", user))
 	c.ui.Output("WinRM Config")
-	c.ui.Output(fmt.Sprintf("\t%s: %d", "MaxEnvelopeSizeKB", info.WinRM.MaxEnvelopeSizekb))
-	c.ui.Output(fmt.Sprintf("\t%s: %d", "Service/MaxConcurrentOperationsPerUser", info.WinRM.Service.MaxConcurrentOperationsPerUser))
-	c.ui.Output(fmt.Sprintf("\t%s: %d", "Winrs/MaxMemoryPerShellMB", info.WinRM.Winrs.MaxMemoryPerShellMB))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "MaxEnvelopeSizeKB", info.WinRM.MaxEnvelopeSizeKB))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "MaxTimeoutMS", info.WinRM.MaxTimeoutMS))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Service/MaxConcurrentOperations", info.WinRM.Service.MaxConcurrentOperations))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Service/MaxConcurrentOperationsPerUser", info.WinRM.Service.MaxConcurrentOperationsPerUser))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Service/MaxConnections", info.WinRM.Service.MaxConnections))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Winrs/MaxConcurrentUsers", info.WinRM.Winrs.MaxConcurrentUsers))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Winrs/MaxProcessesPerShell", info.WinRM.Winrs.MaxProcessesPerShell))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Winrs/MaxMemoryPerShellMB", info.WinRM.Winrs.MaxMemoryPerShellMB))
+	c.ui.Output(fmt.Sprintf("    %s: %d", "Winrs/MaxShellsPerUser", info.WinRM.Winrs.MaxShellsPerUser))
 
 	return 0
 }

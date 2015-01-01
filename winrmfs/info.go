@@ -11,17 +11,23 @@ type Info struct {
 }
 
 type WinrmConfig struct {
-	MaxEnvelopeSizekb int
+	MaxEnvelopeSizeKB int `xml:"MaxEnvelopeSizekb"`
+	MaxTimeoutMS      int `xml:"MaxTimeoutms"`
 	Service           WinrmServiceConfig
 	Winrs             WinrmWinrsConfig
 }
 
 type WinrmServiceConfig struct {
+	MaxConnections                 int
+	MaxConcurrentOperations        int
 	MaxConcurrentOperationsPerUser int
 }
 
 type WinrmWinrsConfig struct {
-	MaxMemoryPerShellMB int
+	MaxMemoryPerShellMB  int
+	MaxShellsPerUser     int
+	MaxConcurrentUsers   int
+	MaxProcessesPerShell int
 }
 
 func fetchInfo(client *winrm.Client) (*Info, error) {
