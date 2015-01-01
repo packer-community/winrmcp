@@ -12,23 +12,17 @@ import (
 	"github.com/mitchellh/packer/common/uuid"
 )
 
-func doCopy(client *winrm.Client, fromPath, toPath string) error {
+func doCopy(client *winrm.Client, in io.Reader, toPath string) error {
 	tempFile := fmt.Sprintf("winrmfs-%s.tmp", uuid.TimeOrderedUUID())
 	tempPath := "$env:TEMP\\" + tempFile
 
-	file, err := os.Open(fromPath)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Couldn't open file %s: %v", fromPath, err))
-	}
-
-	defer file.Close()
 	if os.Getenv("WINRMFS_DEBUG") != "" {
-		log.Printf("Copying file from %s to %s\n", fromPath, tempPath)
+		log.Printf("Copying file to %s\n", tempPath)
 	}
 
-	err = uploadContent(client, "%TEMP%\\"+tempFile, file)
+	err := uploadContent(client, "%TEMP%\\"+tempFile, in)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error uploading file from %s to %s: %v", fromPath, tempPath, err))
+		return errors.New(fmt.Sprintf("Error uploading file to %s: %v", tempPath, err))
 	}
 
 	if os.Getenv("WINRMFS_DEBUG") != "" {
