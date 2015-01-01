@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/dylanmei/winrmfs/winrmfs"
 	"github.com/masterzen/winrm/winrm"
@@ -76,12 +78,14 @@ func (c *lsCommand) Run(args []string) int {
 		return 1
 	}
 
+	tw := new(tabwriter.Writer)
+	tw.Init(os.Stdout, 0, 8, 0, '\t', 0)
+	fmt.Fprintf(tw, "\tName\tLastWriteTime\tLength\n")
+	fmt.Fprintf(tw, "\t----\t-------------\t------\n")
 	for _, fi := range list {
-		fmt.Printf("Mode: %s, ", fi.Mode)
-		fmt.Printf("Name: %s, ", fi.Name)
-		fmt.Printf("LastWriteTime: %s, ", fi.LastWriteTime)
-		fmt.Printf("Length: %d\n", fi.Length)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%d\n", fi.Mode, fi.Name, fi.LastWriteTime, fi.Length)
 	}
+	tw.Flush()
 
 	return 0
 }
