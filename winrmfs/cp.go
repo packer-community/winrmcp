@@ -22,17 +22,11 @@ func doCopy(client *winrm.Client, fromPath, toPath string) error {
 	}
 
 	defer file.Close()
-	shell, err := client.CreateShell()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Couldn't create shell: %v", err))
-	}
-	defer shell.Close()
-
 	if os.Getenv("WINRMFS_DEBUG") != "" {
 		log.Printf("Copying file from %s to %s\n", fromPath, tempPath)
 	}
 
-	err = uploadContent(shell, "%TEMP%\\"+tempFile, file)
+	err = uploadContent(client, "%TEMP%\\"+tempFile, file)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error uploading file from %s to %s: %v", fromPath, tempPath, err))
 	}
@@ -58,7 +52,31 @@ func doCopy(client *winrm.Client, fromPath, toPath string) error {
 	return nil
 }
 
-func uploadContent(shell *winrm.Shell, filePath string, reader io.Reader) error {
+func uploadContent(client *winrm.Client, filePath string, reader io.Reader) error {
+	info, err := fetchInfo(client)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Couldn't fetch WinRM info: %v", err))
+	}
+
+	done := false
+	maxChunks := info.WinRM.Service.MaxConcurrentOperationsPerUser
+	for !done {
+		done, err = uploadChunks(client, filePath, maxChunks, reader)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func uploadChunks(client *winrm.Client, filePath string, maxChunks int, reader io.Reader) (bool, error) {
+	shell, err := client.CreateShell()
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("Couldn't create shell: %v", err))
+	}
+	defer shell.Close()
+
 	// Upload the file in chunks to get around the Windows command line size limit.
 	// Base64 encodes each set of three bytes into four bytes. In addition the output
 	// is padded to always be a multiple of four.
@@ -73,23 +91,23 @@ func uploadContent(shell *winrm.Shell, filePath string, reader io.Reader) error 
 	chunkSize := ((8000 - len(filePath)) / 4) * 3
 	chunk := make([]byte, chunkSize)
 
-	for {
+	for i := 0; i < maxChunks; i++ {
 		n, err := reader.Read(chunk)
 
 		if err != nil && err != io.EOF {
-			return err
+			return false, err
 		}
 		if n == 0 {
-			return nil
+			return true, nil
 		}
 
 		content := base64.StdEncoding.EncodeToString(chunk[:n])
 		if err = appendContent(shell, filePath, content); err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 func restoreContent(client *winrm.Client, fromPath, toPath string) error {
