@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"strings"
 
+	"github.com/dylanmei/winrmfs/winrmfs"
 	"github.com/masterzen/winrm/winrm"
-	"github.com/masterzen/xmlpath"
 	"github.com/mitchellh/cli"
 )
 
@@ -56,45 +55,21 @@ func (c *infoCommand) Run(args []string) int {
 	}
 
 	client := winrm.NewClient(endpoint, user, pass)
-	stdout, stderr, err := client.RunWithString("winrm get winrm/config -format:xml", "")
+	fs := winrmfs.New(client)
 
+	info, err := fs.Info()
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1
 	}
 
-	if stdout != "" {
-		node, err := xmlpath.Parse(bytes.NewBuffer([]byte(stdout)))
-		if err != nil {
-			c.ui.Error(err.Error())
-			return 1
-		}
-
-		c.ui.Output(fmt.Sprintf("%s: %s", "MaxEnvelopeSizekb", parseConfig(node, "/cfg:Config/cfg:MaxEnvelopeSizekb")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "MaxTimeoutms", parseConfig(node, "/cfg:Config/cfg:MaxTimeoutms")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "MaxBatchItems", parseConfig(node, "/cfg:Config/cfg:MaxBatchItems")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "Service/MaxConcurrentOperations", parseConfig(node, "/cfg:Config/cfg:Service/cfg:MaxConcurrentOperations")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "Service/MaxConcurrentOperationsPerUser", parseConfig(node, "/cfg:Config/cfg:Service/cfg:MaxConcurrentOperationsPerUser")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "Winrs/IdleTimeout", parseConfig(node, "/cfg:Config/cfg:Winrs/cfg:IdleTimeout")))
-		c.ui.Output(fmt.Sprintf("%s: %s", "Winrs/MaxConcurrentUsers", parseConfig(node, "/cfg:Config/cfg:Winrs/cfg:MaxConcurrentUsers")))
-	}
-
-	if stderr != "" {
-		println(stderr)
-	}
+	c.ui.Output("Auth")
+	c.ui.Output(fmt.Sprintf("\tUser: %s", user))
+	c.ui.Output(fmt.Sprintf("\tBasic: %v", true))
+	c.ui.Output("WinRM Config")
+	c.ui.Output(fmt.Sprintf("\t%s: %d", "MaxEnvelopeSizeKB", info.WinRM.MaxEnvelopeSizekb))
+	c.ui.Output(fmt.Sprintf("\t%s: %d", "Service/MaxConcurrentOperationsPerUser", info.WinRM.Service.MaxConcurrentOperationsPerUser))
+	c.ui.Output(fmt.Sprintf("\t%s: %d", "Winrs/MaxMemoryPerShellMB", info.WinRM.Winrs.MaxMemoryPerShellMB))
 
 	return 0
-}
-
-func parseConfig(config *xmlpath.Node, selector string) string {
-	path, _ := xmlpath.CompileWithNamespace(selector, []xmlpath.Namespace{
-		{"cfg", "http://schemas.microsoft.com/wbem/wsman/1/config"},
-	})
-
-	value, ok := path.String(config)
-	if !ok {
-		return ""
-	}
-
-	return value
 }
