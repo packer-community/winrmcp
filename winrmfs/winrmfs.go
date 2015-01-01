@@ -13,3 +13,8 @@ func New(client *winrm.Client) *Winrmfs {
 func (fs *Winrmfs) Info() (*Info, error) {
 	return fetchInfo(fs.client)
 }
+
+func (fs *Winrmfs) Copy(fromPath, toPath string) error {
+	return doCopy(fs.client, fromPath, toPath)
+}
+
