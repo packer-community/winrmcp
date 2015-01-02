@@ -12,7 +12,7 @@ import (
 )
 
 func addrFlag(f *flag.FlagSet) *string {
-	defaultAddr := os.Getenv("WINRMFS_ADDR")
+	defaultAddr := os.Getenv("WINRMCP_ADDR")
 	if defaultAddr == "" {
 		defaultAddr = "localhost:5985"
 	}

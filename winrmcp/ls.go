@@ -47,7 +47,7 @@ func fetchList(client *winrm.Client, remotePath string) ([]FileItem, error) {
 	}
 
 	if stderr != "" {
-		if os.Getenv("WINRMFS_DEBUG") != "" {
+		if os.Getenv("WINRMCP_DEBUG") != "" {
 			log.Printf("STDERR returned: %s\n", stderr)
 		}
 	}

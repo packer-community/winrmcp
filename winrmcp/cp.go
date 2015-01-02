@@ -16,7 +16,7 @@ func doCopy(client *winrm.Client, in io.Reader, toPath string) error {
 	tempFile := fmt.Sprintf("winrmfs-%s.tmp", uuid.TimeOrderedUUID())
 	tempPath := "$env:TEMP\\" + tempFile
 
-	if os.Getenv("WINRMFS_DEBUG") != "" {
+	if os.Getenv("WINRMCP_DEBUG") != "" {
 		log.Printf("Copying file to %s\n", tempPath)
 	}
 
@@ -25,7 +25,7 @@ func doCopy(client *winrm.Client, in io.Reader, toPath string) error {
 		return errors.New(fmt.Sprintf("Error uploading file to %s: %v", tempPath, err))
 	}
 
-	if os.Getenv("WINRMFS_DEBUG") != "" {
+	if os.Getenv("WINRMCP_DEBUG") != "" {
 		log.Printf("Moving file from %s to %s", tempPath, toPath)
 	}
 
@@ -34,7 +34,7 @@ func doCopy(client *winrm.Client, in io.Reader, toPath string) error {
 		return errors.New(fmt.Sprintf("Error restoring file from %s to %s: %v", tempPath, toPath, err))
 	}
 
-	if os.Getenv("WINRMFS_DEBUG") != "" {
+	if os.Getenv("WINRMCP_DEBUG") != "" {
 		log.Printf("Removing temporary file %s", tempPath)
 	}
 
