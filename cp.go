@@ -4,7 +4,7 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/dylanmei/winrmfs/winrmfs"
+	"github.com/dylanmei/winrmcp/winrmcp"
 	"github.com/masterzen/winrm/winrm"
 	"github.com/mitchellh/cli"
 )
@@ -74,9 +74,9 @@ func (c *cpCommand) Run(args []string) int {
 	remotePath := args[1]
 
 	client := winrm.NewClient(endpoint, user, pass)
-	fs := winrmfs.New(client)
+	cp := winrmcp.New(client)
 
-	err = fs.Copy(sourcePath, remotePath)
+	err = cp.Copy(sourcePath, remotePath)
 	if err != nil {
 		c.ui.Error(err.Error())
 		return 1

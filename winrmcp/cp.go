@@ -1,4 +1,4 @@
-package winrmfs
+package winrmcp
 
 import (
 	"encoding/base64"
