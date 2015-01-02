@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dylanmei/winrmcp/winrmcp"
+	"github.com/packer-community/winrmcp/winrmcp"
 	"github.com/masterzen/winrm/winrm"
 )
 
