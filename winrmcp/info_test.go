@@ -66,8 +66,4 @@ func Test_fetching_winrm_info(t *testing.T) {
 	if info.WinRM.Winrs.MaxShellsPerUser != 4 {
 		t.Errorf("expected WinRM/Winrs/MaxShellsPerUser to be 4 but was %d", info.WinRM.Winrs.MaxShellsPerUser)
 	}
-
-	//MaxConnections                 int
-	//MaxConcurrentOperations        int
-	//MaxConcurrentOperationsPerUser int
 }
