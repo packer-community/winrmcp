@@ -108,10 +108,11 @@ func runInfo() int {
 
 	flags := flag.NewFlagSet("cli", flag.ContinueOnError)
 	flags.Usage = func() { fmt.Print(usage) }
+	flags.Bool("info", false, "") //dummy
 	flags.StringVar(&user, "user", "vagrant", "winrm admin username")
 	flags.StringVar(&pass, "pass", "vagrant", "winrm admin password")
 	addr := addrFlag(flags)
-	flags.Parse(os.Args)
+	flags.Parse(os.Args[1:])
 
 	endpoint, err := parseEndpoint(*addr)
 	if err != nil {
