@@ -19,27 +19,7 @@ type FileItem struct {
 	Length        int
 }
 
-type list struct {
-	Objects []object `xml:"Object"`
-}
-
-type object struct {
-	Properties []objectProperty `xml:"Property"`
-}
-
-type objectProperty struct {
-	Name  string `xml:"Name,attr"`
-	Value string `xml:",innerxml"`
-}
-
 func fetchList(client *winrm.Client, remotePath string) ([]FileItem, error) {
-	shell, err := client.CreateShell()
-
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Couldn't create shell: %v", err))
-	}
-
-	defer shell.Close()
 	script := fmt.Sprintf("Get-ChildItem %s", remotePath)
 	stdout, stderr, err := client.RunWithString("powershell -Command \""+script+" | ConvertTo-Xml -NoTypeInformation -As String\"", "")
 	if err != nil {
@@ -53,19 +33,19 @@ func fetchList(client *winrm.Client, remotePath string) ([]FileItem, error) {
 	}
 
 	if stdout != "" {
-		doc := list{}
+		doc := pslist{}
 		err := xml.Unmarshal([]byte(stdout), &doc)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Couldn't parse results: %v", err))
 		}
 
-		return convertObjects(doc.Objects), nil
+		return convertFileItems(doc.Objects), nil
 	}
 
 	return []FileItem{}, nil
 }
 
-func convertObjects(objects []object) []FileItem {
+func convertFileItems(objects []psobject) []FileItem {
 	items := make([]FileItem, len(objects))
 
 	for i, object := range objects {

@@ -8,8 +8,57 @@ import (
 	"github.com/masterzen/winrm/winrm"
 )
 
+func Test_fetching_powershell_version(t *testing.T) {
+	h := winrmtest.NewRemote()
+	client := winrm.NewClient(&winrm.Endpoint{h.Host, h.Port}, "test", "test")
+	defer h.Close()
+
+	script := "$PSVersionTable.PSVersion | ConvertTo-Xml -NoTypeInformation -As String"
+	h.CommandFunc("powershell -Command \""+script+"\"", func(out, err io.Writer) int {
+		out.Write([]byte(`<?xml version="1.0"?>
+		<Objects>
+			<Object>1.234</Object>
+		</Objects>`))
+		return 0
+	})
+
+	psSettings := PsSettings{}
+	err := runPsVersion(client, &psSettings)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if psSettings.Version != "1.234" {
+		t.Errorf("expected PowerShell version to be 1.234 but was %s", psSettings.Version)
+	}
+}
+
+func Test_fetching_powershell_execution_policy(t *testing.T) {
+	h := winrmtest.NewRemote()
+	client := winrm.NewClient(&winrm.Endpoint{h.Host, h.Port}, "test", "test")
+	defer h.Close()
+
+	h.CommandFunc("powershell -Command \"Get-ExecutionPolicy | Select-Object\"", func(out, err io.Writer) int {
+		out.Write([]byte("TestPolicy\n"))
+		return 0
+	})
+
+	psSettings := PsSettings{}
+	err := runPsExecutionPolicy(client, &psSettings)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if psSettings.ExecutionPolicy != "TestPolicy" {
+		t.Errorf("expected PowerShell ExecutionPolicy to be TestPolicy but was %s", psSettings.ExecutionPolicy)
+	}
+}
+
 func Test_fetching_winrm_info(t *testing.T) {
 	h := winrmtest.NewRemote()
+	client := winrm.NewClient(&winrm.Endpoint{h.Host, h.Port}, "test", "test")
 	defer h.Close()
 
 	h.CommandFunc("winrm get winrm/config -format:xml", func(out, err io.Writer) int {
@@ -32,38 +81,38 @@ func Test_fetching_winrm_info(t *testing.T) {
 		return 0
 	})
 
-	client := winrm.NewClient(&winrm.Endpoint{h.Host, h.Port}, "test", "test")
-	info, err := fetchInfo(client)
+	winrmConfig := WinrmConfig{}
+	err := runWinrmConfig(client, &winrmConfig)
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 
-	if info.WinRM.MaxEnvelopeSizeKB != 1 {
-		t.Errorf("expected WinRM/MaxEnvelopeSizeKB to be 1 but was %d", info.WinRM.MaxEnvelopeSizeKB)
+	if winrmConfig.MaxEnvelopeSizeKB != 1 {
+		t.Errorf("expected WinRM/MaxEnvelopeSizeKB to be 1 but was %d", winrmConfig.MaxEnvelopeSizeKB)
 	}
-	if info.WinRM.MaxTimeoutMS != 2 {
-		t.Errorf("expected WinRM/MaxTimeoutMS to be 2 but was %d", info.WinRM.MaxTimeoutMS)
+	if winrmConfig.MaxTimeoutMS != 2 {
+		t.Errorf("expected WinRM/MaxTimeoutMS to be 2 but was %d", winrmConfig.MaxTimeoutMS)
 	}
-	if info.WinRM.Service.MaxConcurrentOperations != 1 {
-		t.Errorf("expected WinRM/Service/MaxConcurrentOperations to be 1 but was %d", info.WinRM.Service.MaxConcurrentOperations)
+	if winrmConfig.Service.MaxConcurrentOperations != 1 {
+		t.Errorf("expected WinRM/Service/MaxConcurrentOperations to be 1 but was %d", winrmConfig.Service.MaxConcurrentOperations)
 	}
-	if info.WinRM.Service.MaxConcurrentOperationsPerUser != 2 {
-		t.Errorf("expected WinRM/Service/MaxConcurrentOperationsPerUser to be 2 but was %d", info.WinRM.Service.MaxConcurrentOperationsPerUser)
+	if winrmConfig.Service.MaxConcurrentOperationsPerUser != 2 {
+		t.Errorf("expected WinRM/Service/MaxConcurrentOperationsPerUser to be 2 but was %d", winrmConfig.Service.MaxConcurrentOperationsPerUser)
 	}
-	if info.WinRM.Service.MaxConnections != 3 {
-		t.Errorf("expected WinRM/Service/MaxConnections to be 3 but was %d", info.WinRM.Service.MaxConnections)
+	if winrmConfig.Service.MaxConnections != 3 {
+		t.Errorf("expected WinRM/Service/MaxConnections to be 3 but was %d", winrmConfig.Service.MaxConnections)
 	}
-	if info.WinRM.Winrs.MaxConcurrentUsers != 1 {
-		t.Errorf("expected WinRM/Winrs/MaxConcurrentUsers to be 1 but was %d", info.WinRM.Winrs.MaxConcurrentUsers)
+	if winrmConfig.Winrs.MaxConcurrentUsers != 1 {
+		t.Errorf("expected WinRM/Winrs/MaxConcurrentUsers to be 1 but was %d", winrmConfig.Winrs.MaxConcurrentUsers)
 	}
-	if info.WinRM.Winrs.MaxProcessesPerShell != 2 {
-		t.Errorf("expected WinRM/Winrs/MaxProcessesPerShell to be 2 but was %d", info.WinRM.Winrs.MaxProcessesPerShell)
+	if winrmConfig.Winrs.MaxProcessesPerShell != 2 {
+		t.Errorf("expected WinRM/Winrs/MaxProcessesPerShell to be 2 but was %d", winrmConfig.Winrs.MaxProcessesPerShell)
 	}
-	if info.WinRM.Winrs.MaxMemoryPerShellMB != 3 {
-		t.Errorf("expected WinRM/Winrs/MaxMemoryPerShellMB to be 3 but was %d", info.WinRM.Winrs.MaxMemoryPerShellMB)
+	if winrmConfig.Winrs.MaxMemoryPerShellMB != 3 {
+		t.Errorf("expected WinRM/Winrs/MaxMemoryPerShellMB to be 3 but was %d", winrmConfig.Winrs.MaxMemoryPerShellMB)
 	}
-	if info.WinRM.Winrs.MaxShellsPerUser != 4 {
-		t.Errorf("expected WinRM/Winrs/MaxShellsPerUser to be 4 but was %d", info.WinRM.Winrs.MaxShellsPerUser)
+	if winrmConfig.Winrs.MaxShellsPerUser != 4 {
+		t.Errorf("expected WinRM/Winrs/MaxShellsPerUser to be 4 but was %d", winrmConfig.Winrs.MaxShellsPerUser)
 	}
 }
