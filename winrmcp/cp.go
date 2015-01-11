@@ -47,13 +47,9 @@ func doCopy(client *winrm.Client, in io.Reader, toPath string) error {
 }
 
 func uploadContent(client *winrm.Client, filePath string, reader io.Reader) error {
-	info, err := fetchInfo(client)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Couldn't fetch WinRM info: %v", err))
-	}
-
+	var err error
 	done := false
-	maxChunks := info.WinRM.Service.MaxConcurrentOperationsPerUser
+	maxChunks := maxConcurrentOperations(client)
 	for !done {
 		done, err = uploadChunks(client, filePath, maxChunks, reader)
 		if err != nil {
@@ -62,6 +58,19 @@ func uploadContent(client *winrm.Client, filePath string, reader io.Reader) erro
 	}
 
 	return nil
+}
+
+func maxConcurrentOperations(client *winrm.Client) int {
+	info, err := fetchInfo(client)
+	if err == nil {
+		if ops := info.WinRM.Service.MaxConcurrentOperationsPerUser; ops != 0 {
+			return ops
+		}
+		if info.PowerShell.Version == "2.0" {
+			return 15
+		}
+	}
+	return 1
 }
 
 func uploadChunks(client *winrm.Client, filePath string, maxChunks int, reader io.Reader) (bool, error) {

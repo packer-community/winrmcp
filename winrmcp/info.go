@@ -67,9 +67,13 @@ func fetchInfo(client *winrm.Client) (*Info, error) {
 }
 
 func runWinrmConfig(client *winrm.Client, config *WinrmConfig) error {
-	stdout, _, err := client.RunWithString("winrm get winrm/config -format:xml", "")
+	stdout, stderr, err := client.RunWithString("winrm get winrm/config -format:xml", "")
 	if err != nil {
 		return err
+	}
+
+	if os.Getenv("WINRMCP_DEBUG") != "" {
+		log.Printf("STDERR returned: %s\n", stderr)
 	}
 
 	if stdout != "" {
