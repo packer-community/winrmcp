@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/packer-community/winrmcp/winrmcp"
 	"github.com/masterzen/winrm/winrm"
+	"github.com/packer-community/winrmcp/winrmcp"
 )
 
 var usage string = `
@@ -23,77 +23,65 @@ Options:
 `
 
 func main() {
-	if runSwitch("-help") {
+	if hasSwitch("-help") {
+		fmt.Print(usage)
 		return
 	}
-	if runSwitch("-info") {
-		return
-	}
-
-	exitCode := runMain()
-	os.Exit(exitCode)
-}
-
-func runSwitch(name string) bool {
-	for _, arg := range os.Args[1:] {
-		if arg != name {
-			continue
-		}
-		switch arg {
-		case "-help":
-			fmt.Print(usage)
-			return true
-		case "-info":
-			exitCode := runInfo()
-			os.Exit(exitCode)
-			return true
-		}
-	}
-
-	return false
-}
-
-func runMain() int {
-	var user string
-	var pass string
 
 	flags := flag.NewFlagSet("cli", flag.ContinueOnError)
 	flags.Usage = func() { fmt.Print(usage) }
-	flags.StringVar(&user, "user", "vagrant", "winrm admin username")
-	flags.StringVar(&pass, "pass", "vagrant", "winrm admin password")
+	info := flags.Bool("info", false, "")
+	user := flags.String("user", "vagrant", "winrm admin username")
+	pass := flags.String("pass", "vagrant", "winrm admin password")
 	addr := addrFlag(flags)
 	flags.Parse(os.Args[1:])
+
+	endpoint, err := parseEndpoint(*addr)
+	if err != nil {
+		fmt.Printf("Couldn't parse addr: %v\n", err)
+		os.Exit(1)
+	}
+
+	client := winrm.NewClient(endpoint, *user, *pass)
+	var exitCode int
+	if *info {
+		exitCode := runInfo(client, *user, *addr)
+		os.Exit(exitCode)
+	}
 
 	args := flags.Args()
 	if len(args) < 1 {
 		fmt.Println("Source directory is required.")
-		fmt.Print(usage)
-		return 1
-	}
-	if len(args) < 2 {
+		exitCode = 1
+	} else if len(args) < 2 {
 		fmt.Println("Remote directory is required.\n")
-		fmt.Print(usage)
-		return 1
-	}
-	if len(args) > 2 {
+		exitCode = 1
+	} else if len(args) > 2 {
 		fmt.Println("Too many arguments. Only a source and remote directory are required.\n")
+		exitCode = 1
+	}
+	if exitCode != 0 {
 		fmt.Print(usage)
-		return 1
+	} else {
+		exitCode = runCopy(client, args[0], args[1])
 	}
 
-	endpoint, err := parseEndpoint(*addr)
-	if err != nil {
-		fmt.Println(err.Error())
-		return 1
+	os.Exit(exitCode)
+}
+
+func hasSwitch(name string) bool {
+	for _, arg := range os.Args[1:] {
+		if arg == name {
+			return true
+		}
 	}
+	return false
+}
 
-	fromPath := args[0]
-	toPath := args[1]
-
-	client := winrm.NewClient(endpoint, user, pass)
+func runCopy(client *winrm.Client, fromPath, toPath string) int {
 	cp := winrmcp.New(client)
 
-	err = cp.Copy(fromPath, toPath)
+	err := cp.Copy(fromPath, toPath)
 	if err != nil {
 		fmt.Println(err.Error())
 		return 1
@@ -102,25 +90,7 @@ func runMain() int {
 	return 0
 }
 
-func runInfo() int {
-	var user string
-	var pass string
-
-	flags := flag.NewFlagSet("cli", flag.ContinueOnError)
-	flags.Usage = func() { fmt.Print(usage) }
-	flags.Bool("info", false, "") //dummy
-	flags.StringVar(&user, "user", "vagrant", "winrm admin username")
-	flags.StringVar(&pass, "pass", "vagrant", "winrm admin password")
-	addr := addrFlag(flags)
-	flags.Parse(os.Args[1:])
-
-	endpoint, err := parseEndpoint(*addr)
-	if err != nil {
-		fmt.Println(err.Error())
-		return 1
-	}
-
-	client := winrm.NewClient(endpoint, user, pass)
+func runInfo(client *winrm.Client, user, addr string) int {
 	cp := winrmcp.New(client)
 
 	info, err := cp.Info()
@@ -130,7 +100,7 @@ func runInfo() int {
 	}
 
 	fmt.Println("Client")
-	fmt.Printf("    Addr: %s:%d\n", endpoint.Host, endpoint.Port)
+	fmt.Printf("    Addr: %s\n", addr)
 	fmt.Printf("    Auth: %s", "Basic\n")
 	fmt.Printf("    User: %s\n", user)
 	fmt.Println("WinRM Config")
