@@ -1,11 +1,56 @@
 package winrmcp
 
-import "text/template"
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"text/template"
+
+	"github.com/masterzen/winrm/winrm"
+)
+
+type elevatedOptions struct {
+	User           string
+	Password       string
+	TempPath       string
+	Description    string
+	EncodedCommand string
+}
+
+func runElevatedCommand(client *winrm.Client, command string, stdout io.Writer, stderr io.Writer) error {
+	// generate command
+	var buffer bytes.Buffer
+	err := elevatedTemplate.Execute(&buffer, elevatedOptions{
+		User:           "packer",
+		Password:       "packer",
+		Description:    "Command: " + command,
+		EncodedCommand: psencode([]byte(command + "; exit $LASTEXITCODE")),
+	})
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Couldn't compile elevated command: %v", err))
+	}
+
+	shell, err := client.CreateShell()
+	if err != nil {
+		return err
+	}
+	defer shell.Close()
+
+	cmd, err := shell.Execute("powershell", "-EncodedCommand", psencode(buffer.Bytes()))
+	if err != nil {
+		return errors.New(fmt.Sprintf("Couldn't execute elevated command: %v", err))
+	}
+
+	go io.Copy(stdout, cmd.Stdout)
+	go io.Copy(stderr, cmd.Stderr)
+	cmd.Wait()
+
+	return nil
+}
 
 var elevatedTemplate = template.Must(template.New("ElevatedCommand").Parse(`
-$command = "{{.Command}}" + '; exit $LASTEXITCODE'
-$user = '{{.User}}'
-$password = '{{.Password}}'
 $task_name = "packer-elevated-shell"
 $out_file = "$env:TEMP\packer-elevated-shell.log"
 if (Test-Path $out_file) {
@@ -14,9 +59,12 @@ if (Test-Path $out_file) {
 $task_xml = @'
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+	<Description>{{.Description}}</Description>
+  </RegistrationInfo>
   <Principals>
     <Principal id="Author">
-      <UserId>{user}</UserId>
+      <UserId>{{.User}}</UserId>
       <LogonType>Password</LogonType>
       <RunLevel>HighestAvailable</RunLevel>
     </Principal>
@@ -43,22 +91,17 @@ $task_xml = @'
   <Actions Context="Author">
     <Exec>
       <Command>cmd</Command>
-      <Arguments>{arguments}</Arguments>
+	  <Arguments>/c powershell.exe -EncodedCommand {{.EncodedCommand}} &gt; C:\Users\packer\AppData\Local\Temp\packer-elevated-shell.log 2&gt;&amp;1</Arguments>
     </Exec>
   </Actions>
 </Task>
 '@
-$bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
-$encoded_command = [Convert]::ToBase64String($bytes)
-$arguments = "/c powershell.exe -EncodedCommand $encoded_command &gt; $out_file 2&gt;&amp;1"
-$task_xml = $task_xml.Replace("{arguments}", $arguments)
-$task_xml = $task_xml.Replace("{user}", $user)
 $schedule = New-Object -ComObject "Schedule.Service"
 $schedule.Connect()
 $task = $schedule.NewTask($null)
 $task.XmlText = $task_xml
 $folder = $schedule.GetFolder("\")
-$folder.RegisterTaskDefinition($task_name, $task, 6, $user, $password, 1, $null) | Out-Null
+$folder.RegisterTaskDefinition($task_name, $task, 6, "{{.User}}", "{{.Password}}", 1, $null) | Out-Null
 $registered_task = $folder.GetTask("\$task_name")
 $registered_task.Run($null) | Out-Null
 $timeout = 10

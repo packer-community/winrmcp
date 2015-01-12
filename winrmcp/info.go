@@ -68,36 +68,18 @@ func fetchInfo(client *winrm.Client) (*Info, error) {
 }
 
 func runWinrmConfig(client *winrm.Client, config *WinrmConfig) error {
-	// generate command
-	var err error
-	var buffer bytes.Buffer
-	err = elevatedTemplate.Execute(&buffer, struct {
-		Command, User, Password string
-	}{
-		"winrm get winrm/config -format:xml", "packer", "packer",
-	})
+	command := "winrm get winrm/config -format:xml"
 
-	if err != nil {
-		return errors.New(fmt.Sprintf("Couldn't compile elevated command: %v", err))
+	stdout := bytes.NewBuffer(make([]byte, 0))
+	stderr := bytes.NewBuffer(make([]byte, 0))
+	err := runElevatedCommand(client, command, stdout, stderr)
+
+	if os.Getenv("WINRMCP_DEBUG") != "" && stderr.Len() > 0 {
+		log.Printf("STDERR returned: %s\n", stderr.String())
 	}
 
-	// execute command
-	stdout, stderr, err := client.RunWithString(
-		fmt.Sprintf("powershell -EncodedCommand %s", psencode(buffer.Bytes())), "")
-	if err != nil {
-		err = errors.New(fmt.Sprintf("Couldn't execute elevated command: %v", err))
-	}
-
-	if stderr != "" {
-		if os.Getenv("WINRMCP_DEBUG") != "" {
-			log.Printf("STDERR returned: %s\n", stderr)
-		}
-	}
-
-	if err == nil {
-		if stdout != "" {
-			err = xml.Unmarshal([]byte(stdout), config)
-		}
+	if err == nil && stdout.Len() > 0 {
+		err = xml.Unmarshal(stdout.Bytes(), config)
 	}
 
 	return err
