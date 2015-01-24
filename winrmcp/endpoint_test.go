@@ -1,4 +1,4 @@
-package main
+package winrmcp
 
 import (
 	"testing"
@@ -7,6 +7,9 @@ import (
 func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
 	endpoint, err := parseEndpoint("1.2.3.4:1234")
 
+	if err != nil {
+		t.Fatalf("Should not have been an error: %v", err)
+	}
 	if endpoint == nil {
 		t.Error("Endpoint should not be nil")
 	}
@@ -16,14 +19,14 @@ func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
 	if endpoint.Port != 1234 {
 		t.Error("Port should be 1234")
 	}
-	if err != nil {
-		t.Error("Should not have been an error")
-	}
 }
 
 func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	endpoint, err := parseEndpoint("1.2.3.4")
 
+	if err != nil {
+		t.Fatalf("Should not have been an error: %v", err)
+	}
 	if endpoint == nil {
 		t.Error("Endpoint should not be nil")
 	}
@@ -32,9 +35,6 @@ func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	}
 	if endpoint.Port != 5985 {
 		t.Error("Port should be 5985")
-	}
-	if err != nil {
-		t.Error("Should not have been an error")
 	}
 }
 

@@ -12,10 +12,30 @@ import (
 
 type Winrmcp struct {
 	client *winrm.Client
+	config *Config
 }
 
-func New(client *winrm.Client) *Winrmcp {
-	return &Winrmcp{client}
+type Config struct {
+	Auth Auth
+	//MaxCommandsPerShell int
+}
+
+type Auth struct {
+	User string
+	Password string
+}
+
+func New(addr string, config *Config) (*Winrmcp, error) {
+	endpoint, err := parseEndpoint(addr)
+	if err != nil {
+		return nil, err
+	}
+	if config == nil {
+		config = &Config{}
+	}
+
+	client := winrm.NewClient(endpoint, config.Auth.User, config.Auth.Password)
+	return &Winrmcp{client, config}, nil
 }
 
 func (fs *Winrmcp) Info() (*Info, error) {
