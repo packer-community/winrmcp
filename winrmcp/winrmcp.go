@@ -16,12 +16,12 @@ type Winrmcp struct {
 }
 
 type Config struct {
-	Auth Auth
-	//MaxCommandsPerShell int
+	Auth                Auth
+	MaxCommandsPerShell int
 }
 
 type Auth struct {
-	User string
+	User     string
 	Password string
 }
 
@@ -36,10 +36,6 @@ func New(addr string, config *Config) (*Winrmcp, error) {
 
 	client := winrm.NewClient(endpoint, config.Auth.User, config.Auth.Password)
 	return &Winrmcp{client, config}, nil
-}
-
-func (fs *Winrmcp) Info() (*Info, error) {
-	return fetchInfo(fs.client)
 }
 
 func (fs *Winrmcp) Copy(fromPath, toPath string) error {
@@ -67,7 +63,7 @@ func (fs *Winrmcp) Copy(fromPath, toPath string) error {
 }
 
 func (fs *Winrmcp) Write(toPath string, src io.Reader) error {
-	return doCopy(fs.client, src, winPath(toPath))
+	return doCopy(fs.client, fs.config, src, winPath(toPath))
 }
 
 func (fs *Winrmcp) List(remotePath string) ([]FileItem, error) {
@@ -76,6 +72,7 @@ func (fs *Winrmcp) List(remotePath string) ([]FileItem, error) {
 
 type fileWalker struct {
 	client  *winrm.Client
+	config  *Config
 	toDir   string
 	fromDir string
 }
@@ -99,7 +96,7 @@ func (fw *fileWalker) copyFile(fromPath string, fi os.FileInfo, err error) error
 		return errors.New(fmt.Sprintf("Couldn't read file %s: %v", fromPath, err))
 	}
 
-	return doCopy(fw.client, f, winPath(toPath))
+	return doCopy(fw.client, fw.config, f, winPath(toPath))
 }
 
 func shouldUploadFile(fi os.FileInfo) bool {

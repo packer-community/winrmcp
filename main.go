@@ -42,7 +42,8 @@ func runMain() error {
 	flags.Parse(os.Args[1:])
 
 	client, err := winrmcp.New(*addr, &winrmcp.Config{
-		Auth: winrmcp.Auth{*user, *pass},
+		Auth:                winrmcp.Auth{*user, *pass},
+		MaxCommandsPerShell: 15, // sane default
 	})
 	if err != nil {
 		return err
