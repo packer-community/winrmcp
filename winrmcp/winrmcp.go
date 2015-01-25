@@ -6,7 +6,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/dylanmei/iso8601"
 	"github.com/masterzen/winrm/winrm"
 )
 
@@ -17,6 +19,7 @@ type Winrmcp struct {
 
 type Config struct {
 	Auth                Auth
+	OperationTimeout    time.Duration
 	MaxCommandsPerShell int
 }
 
@@ -34,7 +37,12 @@ func New(addr string, config *Config) (*Winrmcp, error) {
 		config = &Config{}
 	}
 
-	client := winrm.NewClient(endpoint, config.Auth.User, config.Auth.Password)
+	params := winrm.DefaultParameters()
+	if config.OperationTimeout.Seconds() > 0 {
+		params.Timeout = iso8601.FormatDuration(config.OperationTimeout)
+	}
+	client := winrm.NewClientWithParameters(
+		endpoint, config.Auth.User, config.Auth.Password, params)
 	return &Winrmcp{client, config}, nil
 }
 

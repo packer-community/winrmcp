@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/packer-community/winrmcp/winrmcp"
 )
@@ -19,6 +20,7 @@ Options:
   -addr=localhost:5985  Host and port of the remote machine
   -user=""              Name of the user to authenticate as
   -pass=""              Password to authenticate with
+  -cmd-timeout="60s"    Max duration of each WinRM command
 
 `
 
@@ -36,13 +38,15 @@ func main() {
 func runMain() error {
 	flags := flag.NewFlagSet("cli", flag.ContinueOnError)
 	flags.Usage = func() { fmt.Print(usage) }
-	user := flags.String("user", "vagrant", "winrm admin username")
-	pass := flags.String("pass", "vagrant", "winrm admin password")
 	addr := flags.String("addr", "localhost:5985", "winrm remote host:port")
+	user := flags.String("user", "", "winrm admin username")
+	pass := flags.String("pass", "", "winrm admin password")
+	opTimeout := flags.Duration("op-timeout", time.Second*60, "winrm operation timeout")
 	flags.Parse(os.Args[1:])
 
 	client, err := winrmcp.New(*addr, &winrmcp.Config{
 		Auth:                winrmcp.Auth{*user, *pass},
+		OperationTimeout:    *opTimeout,
 		MaxCommandsPerShell: 15, // sane default
 	})
 	if err != nil {
