@@ -20,7 +20,7 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 		log.Printf("Copying file to %s\n", tempPath)
 	}
 
-	err := uploadContent(client, config.MaxCommandsPerShell, "%TEMP%\\"+tempFile, in)
+	err := uploadContent(client, config.MaxOperationsPerShell, "%TEMP%\\"+tempFile, in)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error uploading file to %s: %v", tempPath, err))
 	}

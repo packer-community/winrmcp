@@ -17,10 +17,11 @@ Usage: winrmcp [options] [-help | <from> <to>]
 
 Options:
 
-  -addr=localhost:5985  Host and port of the remote machine
-  -user=""              Name of the user to authenticate as
-  -pass=""              Password to authenticate with
-  -cmd-timeout="60s"    Max duration of each WinRM command
+  -user                   Name of the user to authenticate as
+  -pass                   Password to authenticate with
+  -addr=localhost:5985    Host and port of the remote machine
+  -op-timeout=60s         Timeout duration of each WinRM operation
+  -max-ops-per-shell=15   Max number of operations per WinRM shell
 
 `
 
@@ -41,13 +42,14 @@ func runMain() error {
 	addr := flags.String("addr", "localhost:5985", "winrm remote host:port")
 	user := flags.String("user", "", "winrm admin username")
 	pass := flags.String("pass", "", "winrm admin password")
-	opTimeout := flags.Duration("op-timeout", time.Second*60, "winrm operation timeout")
+	opTimeout := flags.Duration("op-timeout", time.Second*60, "operation timeout")
+	maxOpsPerShell := flags.Int("max-ops-per-shell", 15, "max operations per shell")
 	flags.Parse(os.Args[1:])
 
 	client, err := winrmcp.New(*addr, &winrmcp.Config{
-		Auth:                winrmcp.Auth{*user, *pass},
-		OperationTimeout:    *opTimeout,
-		MaxCommandsPerShell: 15, // sane default
+		Auth:                  winrmcp.Auth{*user, *pass},
+		OperationTimeout:      *opTimeout,
+		MaxOperationsPerShell: *maxOpsPerShell,
 	})
 	if err != nil {
 		return err

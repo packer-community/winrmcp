@@ -18,9 +18,9 @@ type Winrmcp struct {
 }
 
 type Config struct {
-	Auth                Auth
-	OperationTimeout    time.Duration
-	MaxCommandsPerShell int
+	Auth                  Auth
+	OperationTimeout      time.Duration
+	MaxOperationsPerShell int
 }
 
 type Auth struct {
