@@ -63,6 +63,7 @@ func (fs *Winrmcp) Copy(fromPath, toPath string) error {
 	} else {
 		fw := fileWalker{
 			client:  fs.client,
+			config:  fs.config,
 			toDir:   toPath,
 			fromDir: fromPath,
 		}
