@@ -41,9 +41,9 @@ func New(addr string, config *Config) (*Winrmcp, error) {
 	if config.OperationTimeout.Seconds() > 0 {
 		params.Timeout = iso8601.FormatDuration(config.OperationTimeout)
 	}
-	client := winrm.NewClientWithParameters(
+	client, err := winrm.NewClientWithParameters(
 		endpoint, config.Auth.User, config.Auth.Password, params)
-	return &Winrmcp{client, config}, nil
+	return &Winrmcp{client, config}, err
 }
 
 func (fs *Winrmcp) Copy(fromPath, toPath string) error {
