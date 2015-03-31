@@ -10,7 +10,7 @@ import (
 	"github.com/masterzen/winrm/winrm"
 )
 
-func parseEndpoint(addr string) (*winrm.Endpoint, error) {
+func parseEndpoint(addr string, https bool, insecure bool, caCert []byte) (*winrm.Endpoint, error) {
 	var host string
 	var port int
 
@@ -33,6 +33,10 @@ func parseEndpoint(addr string) (*winrm.Endpoint, error) {
 	}
 
 	return &winrm.Endpoint{
-		Host: host, Port: port,
+		Host:     host,
+		Port:     port,
+		HTTPS:    https,
+		Insecure: insecure,
+		CACert:   &caCert,
 	}, nil
 }

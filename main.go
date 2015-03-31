@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -20,6 +21,9 @@ Options:
   -user                   Name of the user to authenticate as
   -pass                   Password to authenticate with
   -addr=localhost:5985    Host and port of the remote machine
+  -https                  Use HTTPS in preference to HTTP
+  -insecure               Do not validate the HTTPS certificate chain
+  -cacert                 Filename of CA cert to validate against
   -op-timeout=60s         Timeout duration of each WinRM operation
   -max-ops-per-shell=15   Max number of operations per WinRM shell
 
@@ -42,12 +46,30 @@ func runMain() error {
 	addr := flags.String("addr", "localhost:5985", "winrm remote host:port")
 	user := flags.String("user", "", "winrm admin username")
 	pass := flags.String("pass", "", "winrm admin password")
+	https := flags.Bool("https", false, "use https instead of http")
+	insecure := flags.Bool("insecure", false, "do not validate https certificate chain")
+	cacert := flags.String("cacert", "", "ca certificate to validate against")
 	opTimeout := flags.Duration("op-timeout", time.Second*60, "operation timeout")
 	maxOpsPerShell := flags.Int("max-ops-per-shell", 15, "max operations per shell")
 	flags.Parse(os.Args[1:])
 
+	var certBytes []byte
+	var err error
+	if *cacert != "" {
+		certBytes, err = ioutil.ReadFile(*cacert)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	} else {
+		certBytes = nil
+	}
+
 	client, err := winrmcp.New(*addr, &winrmcp.Config{
 		Auth:                  winrmcp.Auth{*user, *pass},
+		Https:                 *https,
+		Insecure:              *insecure,
+		CACertBytes:           certBytes,
 		OperationTimeout:      *opTimeout,
 		MaxOperationsPerShell: *maxOpsPerShell,
 	})
