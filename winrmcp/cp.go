@@ -13,7 +13,7 @@ import (
 )
 
 func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) error {
-	tempFile := fmt.Sprintf("winrmfs-%s.tmp", uuid.TimeOrderedUUID())
+	tempFile := fmt.Sprintf("winrmcp-%s.tmp", uuid.TimeOrderedUUID())
 	tempPath := "$env:TEMP\\" + tempFile
 
 	if os.Getenv("WINRMCP_DEBUG") != "" {
