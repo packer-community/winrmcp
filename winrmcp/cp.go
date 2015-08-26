@@ -30,7 +30,7 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 		log.Printf("Moving file from %s to %s", tempPath, toPath)
 	}
 
-	err = restoreContent(client, tempPath, toPath)
+	err = restoreContent(client, tempFile, toPath)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error restoring file from %s to %s: %v", tempPath, toPath, err))
 	}
@@ -39,7 +39,7 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 		log.Printf("Removing temporary file %s", tempPath)
 	}
 
-	err = cleanupContent(client, tempPath)
+	err = cleanupContent(client, fmt.Sprintf("%s.tmp", toPath))
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error removing temporary file %s: %v", tempPath, err))
 	}
@@ -49,24 +49,67 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 
 func uploadContent(client *winrm.Client, maxChunks int, filePath string, reader io.Reader) error {
 	var err error
-	done := false
-	for !done {
-		done, err = uploadChunks(client, filePath, maxChunks, reader)
-		if err != nil {
-			return err
-		}
+	var piece = 0
+	var wg sync.WaitGroup
+	parallel := 4
+
+	if maxChunks == 0 {
+		maxChunks = 1
 	}
 
-	return nil
+	// Create 4 Parallel workers
+	for p := 0; p < parallel; p++ {
+		done := make(chan bool, 1)
+		// Add worker to the WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+		Loop:
+			for {
+				select {
+				case <-done:
+					break Loop
+				default:
+					// Create a shell
+					shell, gerr := client.CreateShell()
+					if gerr != nil {
+						err = gerr
+						break Loop
+					}
+					defer shell.Close()
+
+					// Each shell can do X amount of chunks per session
+					for c := 0; c < maxChunks; c++ {
+						// Read a chunk
+						piece++
+						content, finished, gerr := getChunk(reader, filePath)
+						if gerr != nil {
+							err = gerr
+							done <- true
+							shell.Close()
+							break
+						}
+						if finished {
+							done <- true
+							shell.Close()
+							break
+						}
+
+						gerr = uploadChunks(shell, fmt.Sprintf("%v.%v", filePath, piece), content)
+						if gerr != nil {
+							err = gerr
+							done <- true
+						}
+					}
+					shell.Close()
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	return err
 }
-
-func uploadChunks(client *winrm.Client, filePath string, maxChunks int, reader io.Reader) (bool, error) {
-	shell, err := client.CreateShell()
-	if err != nil {
-		return false, errors.New(fmt.Sprintf("Couldn't create shell: %v", err))
-	}
-	defer shell.Close()
-
+func getChunk(reader io.Reader, filePath string) (string, bool, error) {
 	// Upload the file in chunks to get around the Windows command line size limit.
 	// Base64 encodes each set of three bytes into four bytes. In addition the output
 	// is padded to always be a multiple of four.
@@ -81,30 +124,27 @@ func uploadChunks(client *winrm.Client, filePath string, maxChunks int, reader i
 	chunkSize := ((8000 - len(filePath)) / 4) * 3
 	chunk := make([]byte, chunkSize)
 
-	if maxChunks == 0 {
-		maxChunks = 1
+	n, err := reader.Read(chunk)
+	if err != nil && err != io.EOF {
+		return "", false, err
+	}
+	if n == 0 {
+		return "", true, nil
 	}
 
-	for i := 0; i < maxChunks; i++ {
-		n, err := reader.Read(chunk)
+	content := base64.StdEncoding.EncodeToString(chunk[:n])
 
-		if err != nil && err != io.EOF {
-			return false, err
-		}
-		if n == 0 {
-			return true, nil
-		}
+	return content, false, nil
 
-		content := base64.StdEncoding.EncodeToString(chunk[:n])
-		if err = appendContent(shell, filePath, content); err != nil {
-			return false, err
-		}
-	}
-
-	return false, nil
 }
 
-func restoreContent(client *winrm.Client, fromPath, toPath string) error {
+func uploadChunks(shell *winrm.Shell, filePath string, content string) error {
+	// Upload chunk
+	err := appendContent(shell, filePath, content)
+	return err
+}
+
+func restoreContent(client *winrm.Client, fileLike, toPath string) error {
 	shell, err := client.CreateShell()
 	if err != nil {
 		return err
@@ -112,8 +152,9 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 
 	defer shell.Close()
 	script := fmt.Sprintf(`
-		$tmp_file_path = [System.IO.Path]::GetFullPath("%s")
+		Write-Host ""
 		$dest_file_path = [System.IO.Path]::GetFullPath("%s")
+		$dest_file_path_temp = [System.IO.Path]::GetFullPath("$dest_file_path.tmp")
 		if (Test-Path $dest_file_path) {
 			rm $dest_file_path
 		}
@@ -122,15 +163,32 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 			New-Item -ItemType directory -Force -ErrorAction SilentlyContinue -Path $dest_dir | Out-Null
 		}
 
-		if (Test-Path $tmp_file_path) {
-			$base64_lines = Get-Content $tmp_file_path
-			$base64_string = [string]::join("",$base64_lines)
-			$bytes = [System.Convert]::FromBase64String($base64_string) 
-			[System.IO.File]::WriteAllBytes($dest_file_path, $bytes)
-		} else {
-			echo $null > $dest_file_path
+		$file_list = Get-ChildItem $env:TEMP |
+		where {$_.Name -like "%s*"}
+
+		# Get the number from the last part of the file and sort
+		$file_list | foreach {
+				$_ | Add-Member -Name Number -MemberType NoteProperty -Value -1
+				$_.Number = [int]$_.Name.Substring($_.Name.IndexOf("tmp.")+4)
 		}
-	`, fromPath, toPath)
+		$file_list = $file_list | sort { $_.Number }
+
+		if (Test-Path $dest_file_path_temp) {
+			rm $dest_file_path_temp
+		}
+		# For each file in the list, add it to a main file
+		$file_list | foreach {
+				$tmp_file_path = [System.IO.Path]::GetFullPath($_.FullName)
+				$content = Get-Content $tmp_file_path
+				Add-Content -Path $dest_file_path_temp -Value $content
+				rm $tmp_file_path
+		}
+
+		$base64_lines = Get-Content $dest_file_path_temp
+		$base64_string = [string]::join("",$base64_lines)
+		$bytes = [System.Convert]::FromBase64String($base64_string)
+		[System.IO.File]::WriteAllBytes($dest_file_path, $bytes)
+	`, toPath, fileLike)
 
 	cmd, err := shell.Execute(winrm.Powershell(script))
 	if err != nil {
@@ -157,15 +215,14 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 	return nil
 }
 
-func cleanupContent(client *winrm.Client, filePath string) error {
+func cleanupContent(client *winrm.Client, toPath string) error {
 	shell, err := client.CreateShell()
 	if err != nil {
 		return err
 	}
 
 	defer shell.Close()
-	cmd, _ := shell.Execute("powershell", "Remove-Item", filePath, "-ErrorAction SilentlyContinue")
-
+	cmd, _ := shell.Execute("powershell", "Remove-Item", toPath, "-ErrorAction SilentlyContinue")
 	cmd.Wait()
 	cmd.Close()
 	return nil
