@@ -56,8 +56,8 @@ func uploadContent(client *winrm.Client, maxShell int, maxChunks int, filePath s
 		maxChunks = 1
 	}
 
-	if maxChunks == 0 {
-		maxChunks = 10
+	if maxShell == 0 {
+		maxShell = 5
 	}
 
 	// Create 4 Parallel workers
