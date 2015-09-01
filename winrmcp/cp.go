@@ -21,7 +21,7 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 		log.Printf("Copying file to %s\n", tempPath)
 	}
 
-	err := uploadContent(client, config.MaxOperationsPerShell, "%TEMP%\\"+tempFile, in)
+	err := uploadContent(client, config.MaxShells, config.MaxOperationsPerShell, "%TEMP%\\"+tempFile, in)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error uploading file to %s: %v", tempPath, err))
 	}
@@ -47,18 +47,21 @@ func doCopy(client *winrm.Client, config *Config, in io.Reader, toPath string) e
 	return nil
 }
 
-func uploadContent(client *winrm.Client, maxChunks int, filePath string, reader io.Reader) error {
+func uploadContent(client *winrm.Client, maxShell int, maxChunks int, filePath string, reader io.Reader) error {
 	var err error
 	var piece = 0
 	var wg sync.WaitGroup
-	parallel := 4
 
 	if maxChunks == 0 {
 		maxChunks = 1
 	}
 
+	if maxChunks == 0 {
+		maxChunks = 10
+	}
+
 	// Create 4 Parallel workers
-	for p := 0; p < parallel; p++ {
+	for p := 0; p < maxShell; p++ {
 		done := make(chan bool, 1)
 		// Add worker to the WaitGroup
 		wg.Add(1)

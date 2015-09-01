@@ -24,6 +24,7 @@ type Config struct {
 	CACertBytes           []byte
 	OperationTimeout      time.Duration
 	MaxOperationsPerShell int
+	MaxShells             int
 }
 
 type Auth struct {
