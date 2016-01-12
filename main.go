@@ -51,6 +51,7 @@ func runMain() error {
 	cacert := flags.String("cacert", "", "ca certificate to validate against")
 	opTimeout := flags.Duration("op-timeout", time.Second*60, "operation timeout")
 	maxOpsPerShell := flags.Int("max-ops-per-shell", 15, "max operations per shell")
+	maxShells := flags.Int("max-shells", 5, "max shells per user")
 	flags.Parse(os.Args[1:])
 
 	var certBytes []byte
@@ -72,6 +73,7 @@ func runMain() error {
 		CACertBytes:           certBytes,
 		OperationTimeout:      *opTimeout,
 		MaxOperationsPerShell: *maxOpsPerShell,
+		MaxShells:             *maxShells,
 	})
 	if err != nil {
 		return err

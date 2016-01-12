@@ -24,6 +24,7 @@ type Config struct {
 	CACertBytes           []byte
 	OperationTimeout      time.Duration
 	MaxOperationsPerShell int
+	MaxShells             int
 }
 
 type Auth struct {
@@ -63,15 +64,14 @@ func (fs *Winrmcp) Copy(fromPath, toPath string) error {
 
 	if !fi.IsDir() {
 		return fs.Write(toPath, f)
-	} else {
-		fw := fileWalker{
-			client:  fs.client,
-			config:  fs.config,
-			toDir:   toPath,
-			fromDir: fromPath,
-		}
-		return filepath.Walk(fromPath, fw.copyFile)
 	}
+	fw := fileWalker{
+		client:  fs.client,
+		config:  fs.config,
+		toDir:   toPath,
+		fromDir: fromPath,
+	}
+	return filepath.Walk(fromPath, fw.copyFile)
 }
 
 func (fs *Winrmcp) Write(toPath string, src io.Reader) error {
