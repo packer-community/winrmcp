@@ -116,7 +116,7 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 	defer shell.Close()
 	script := fmt.Sprintf(`
 		$tmp_file_path = [System.IO.Path]::GetFullPath("%s")
-		$dest_file_path = [System.IO.Path]::GetFullPath("%s")
+		$dest_file_path = [System.IO.Path]::GetFullPath("%s".Trim("'"))
 		if (Test-Path $dest_file_path) {
 			rm $dest_file_path
 		}
