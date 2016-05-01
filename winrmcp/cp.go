@@ -115,8 +115,8 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 
 	defer shell.Close()
 	script := fmt.Sprintf(`
-		$tmp_file_path = [System.IO.Path]::GetFullPath("%s")
-		$dest_file_path = [System.IO.Path]::GetFullPath("%s".Trim("'"))
+		$tmp_file_path = [System.IO.Path]::GetFullPath(%q)
+		$dest_file_path = [System.IO.Path]::GetFullPath(%q)
 		if (Test-Path $dest_file_path) {
 			rm $dest_file_path
 		}
@@ -175,7 +175,7 @@ func cleanupContent(client *winrm.Client, filePath string) error {
 }
 
 func appendContent(shell *winrm.Shell, filePath, content string) error {
-	cmd, err := shell.Execute(fmt.Sprintf("echo %s >> \"%s\"", content, filePath))
+	cmd, err := shell.Execute(fmt.Sprintf("echo %s >> %q", content, filePath))
 
 	if err != nil {
 		return err

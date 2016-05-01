@@ -20,7 +20,7 @@ type FileItem struct {
 }
 
 func fetchList(client *winrm.Client, remotePath string) ([]FileItem, error) {
-	script := fmt.Sprintf("Get-ChildItem %s", remotePath)
+	script := fmt.Sprintf("Get-ChildItem %q", remotePath)
 	stdout, stderr, _, err := client.RunWithString("powershell -Command \""+script+" | ConvertTo-Xml -NoTypeInformation -As String\"", "")
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Couldn't execute script %s: %v", script, err))
