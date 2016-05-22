@@ -23,6 +23,7 @@ type Config struct {
 	Https                 bool
 	Insecure              bool
 	CACertBytes           []byte
+	ConnectTimeout        time.Duration
 	OperationTimeout      time.Duration
 	MaxOperationsPerShell int
 	TransportDecorator    func(*http.Transport) http.RoundTripper
@@ -34,7 +35,7 @@ type Auth struct {
 }
 
 func New(addr string, config *Config) (*Winrmcp, error) {
-	endpoint, err := parseEndpoint(addr, config.Https, config.Insecure, config.CACertBytes)
+	endpoint, err := parseEndpoint(addr, config.Https, config.Insecure, config.CACertBytes, config.ConnectTimeout)
 	if err != nil {
 		return nil, err
 	}

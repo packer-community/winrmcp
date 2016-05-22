@@ -1,9 +1,13 @@
 package winrmcp
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
-	endpoint, err := parseEndpoint("1.2.3.4:1234", false, false, nil)
+	timeout, _ := time.ParseDuration("1s")
+	endpoint, err := parseEndpoint("1.2.3.4:1234", false, false, nil, timeout)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -23,11 +27,14 @@ func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
 	if endpoint.HTTPS {
 		t.Error("Endpoint should be HTTP not HTTPS")
 	}
+	if endpoint.Timeout != 1*time.Second {
+		t.Error("Timeout should be 1s")
+	}
 }
 
 func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	certBytes := []byte{1, 2, 3, 4, 5, 6}
-	endpoint, err := parseEndpoint("1.2.3.4", true, true, certBytes)
+	endpoint, err := parseEndpoint("1.2.3.4", true, true, certBytes, 0)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -59,7 +66,7 @@ func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 }
 
 func Test_parsing_an_empty_addr_to_a_winrm_endpoint(t *testing.T) {
-	endpoint, err := parseEndpoint("", false, false, nil)
+	endpoint, err := parseEndpoint("", false, false, nil, 0)
 
 	if endpoint != nil {
 		t.Error("Endpoint should be nil")
@@ -70,7 +77,7 @@ func Test_parsing_an_empty_addr_to_a_winrm_endpoint(t *testing.T) {
 }
 
 func Test_parsing_an_addr_with_a_bad_port(t *testing.T) {
-	endpoint, err := parseEndpoint("1.2.3.4:ABCD", false, false, nil)
+	endpoint, err := parseEndpoint("1.2.3.4:ABCD", false, false, nil, 0)
 
 	if endpoint != nil {
 		t.Error("Endpoint should be nil")
