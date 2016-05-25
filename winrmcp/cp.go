@@ -9,7 +9,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/masterzen/winrm/winrm"
+	"github.com/masterzen/winrm"
 	"github.com/nu7hatch/gouuid"
 )
 
