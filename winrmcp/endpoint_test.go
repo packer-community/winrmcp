@@ -55,11 +55,11 @@ func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 		t.Error("Endpoint should be HTTPS")
 	}
 
-	if len(*endpoint.CACert) != len(certBytes) {
+	if len(endpoint.CACert) != len(certBytes) {
 		t.Error("Length of CACert is wrong")
 	}
 	for i := 0; i < len(certBytes); i++ {
-		if (*endpoint.CACert)[i] != certBytes[i] {
+		if (endpoint.CACert)[i] != certBytes[i] {
 			t.Error("CACert is not set correctly")
 		}
 	}
