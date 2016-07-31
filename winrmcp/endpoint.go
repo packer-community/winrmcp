@@ -38,7 +38,7 @@ func parseEndpoint(addr string, https bool, insecure bool, caCert []byte, timeou
 		Port:     port,
 		HTTPS:    https,
 		Insecure: insecure,
-		CACert:   &caCert,
+		CACert:   caCert,
 		Timeout:  timeout,
 	}, nil
 }
