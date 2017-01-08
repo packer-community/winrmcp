@@ -126,10 +126,20 @@ func restoreContent(client *winrm.Client, fromPath, toPath string) error {
 		}
 
 		if (Test-Path $tmp_file_path) {
-			$base64_lines = Get-Content $tmp_file_path
-			$base64_string = [string]::join("",$base64_lines)
-			$bytes = [System.Convert]::FromBase64String($base64_string) 
-			[System.IO.File]::WriteAllBytes($dest_file_path, $bytes)
+			$reader = [System.IO.File]::OpenText($tmp_file_path)
+      try
+      {
+         $writer = [System.IO.File]::OpenWrite($dest_file_path)
+         while($null -ne ($line = $reader.ReadLine())) {
+           $bytes = [System.Convert]::FromBase64String($line)
+           $writer.Write($bytes,0,($bytes.length))
+         }
+      }
+      finally
+      {
+         $reader.Close()
+         $writer.Close()
+      }
 		} else {
 			echo $null > $dest_file_path
 		}
