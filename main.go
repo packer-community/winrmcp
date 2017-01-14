@@ -11,7 +11,7 @@ import (
 	"github.com/packer-community/winrmcp/winrmcp"
 )
 
-var usage string = `
+var usage = `
 Usage: winrmcp [options] [-help | <from> <to>]
 
   Copy a local file or directory to a remote directory.
@@ -66,7 +66,7 @@ func runMain() error {
 	}
 
 	client, err := winrmcp.New(*addr, &winrmcp.Config{
-		Auth:                  winrmcp.Auth{*user, *pass},
+		Auth:                  winrmcp.Auth{User: *user, Password: *pass},
 		Https:                 *https,
 		Insecure:              *insecure,
 		CACertBytes:           certBytes,
