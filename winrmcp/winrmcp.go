@@ -3,7 +3,6 @@ package winrmcp
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,7 +24,7 @@ type Config struct {
 	ConnectTimeout        time.Duration
 	OperationTimeout      time.Duration
 	MaxOperationsPerShell int
-	TransportDecorator    func(*http.Transport) http.RoundTripper
+	TransportDecorator    func() winrm.Transporter
 }
 
 type Auth struct {
