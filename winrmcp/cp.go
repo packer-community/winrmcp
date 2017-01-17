@@ -176,7 +176,10 @@ func cleanupContent(client *winrm.Client, filePath string) error {
 	}
 
 	defer shell.Close()
-	cmd, _ := shell.Execute("powershell", "Remove-Item", filePath, "-ErrorAction SilentlyContinue")
+	cmd, err := shell.Execute("powershell", "Remove-Item", filePath, "-ErrorAction SilentlyContinue")
+	if err != nil {
+		return err
+	}
 
 	cmd.Wait()
 	cmd.Close()
