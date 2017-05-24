@@ -24,6 +24,7 @@ Options:
   -https                  Use HTTPS in preference to HTTP
   -insecure               Do not validate the HTTPS certificate chain
   -cacert                 Filename of CA cert to validate against
+  -tlsservername          Server name to validate against when using https
   -op-timeout=60s         Timeout duration of each WinRM operation
   -max-ops-per-shell=15   Max number of operations per WinRM shell
 
@@ -48,6 +49,7 @@ func runMain() error {
 	pass := flags.String("pass", "", "winrm admin password")
 	https := flags.Bool("https", false, "use https instead of http")
 	insecure := flags.Bool("insecure", false, "do not validate https certificate chain")
+	tlsservername := flags.String("tlsservername", "", "server name to validate against when using https")
 	cacert := flags.String("cacert", "", "ca certificate to validate against")
 	opTimeout := flags.Duration("op-timeout", time.Second*60, "operation timeout")
 	maxOpsPerShell := flags.Int("max-ops-per-shell", 15, "max operations per shell")
@@ -69,6 +71,7 @@ func runMain() error {
 		Auth:                  winrmcp.Auth{User: *user, Password: *pass},
 		Https:                 *https,
 		Insecure:              *insecure,
+		TLSServerName:         *tlsservername,
 		CACertBytes:           certBytes,
 		OperationTimeout:      *opTimeout,
 		MaxOperationsPerShell: *maxOpsPerShell,
