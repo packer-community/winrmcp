@@ -7,7 +7,7 @@ import (
 
 func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
 	timeout, _ := time.ParseDuration("1s")
-	endpoint, err := parseEndpoint("1.2.3.4:1234", false, false, nil, timeout)
+	endpoint, err := parseEndpoint("1.2.3.4:1234", false, false, "foo", nil, timeout)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -34,7 +34,7 @@ func Test_parsing_an_addr_to_a_winrm_endpoint(t *testing.T) {
 
 func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	certBytes := []byte{1, 2, 3, 4, 5, 6}
-	endpoint, err := parseEndpoint("1.2.3.4", true, true, certBytes, 0)
+	endpoint, err := parseEndpoint("1.2.3.4", true, true, "foo", certBytes, 0)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -67,7 +67,7 @@ func Test_parsing_an_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 
 func Test_parsing_a_hostname_to_a_winrm_endpoint(t *testing.T) {
 	timeout, _ := time.ParseDuration("1s")
-	endpoint, err := parseEndpoint("windows01:1234", false, false, nil, timeout)
+	endpoint, err := parseEndpoint("windows01:1234", false, false, "foo", nil, timeout)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -94,7 +94,7 @@ func Test_parsing_a_hostname_to_a_winrm_endpoint(t *testing.T) {
 
 func Test_parsing_a_hostname_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	certBytes := []byte{1, 2, 3, 4, 5, 6}
-	endpoint, err := parseEndpoint("windows01.microsoft.com", true, true, certBytes, 0)
+	endpoint, err := parseEndpoint("windows01.microsoft.com", true, true, "foo", certBytes, 0)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -127,7 +127,7 @@ func Test_parsing_a_hostname_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 
 func Test_parsing_an_ipv6_addr_to_a_winrm_endpoint(t *testing.T) {
 	timeout, _ := time.ParseDuration("1s")
-	endpoint, err := parseEndpoint("[2402:9900:111:1373:ae5:1c:4cb8:dae0]:1234", false, false, nil, timeout)
+	endpoint, err := parseEndpoint("[2402:9900:111:1373:ae5:1c:4cb8:dae0]:1234", false, false, "foo", nil, timeout)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -154,7 +154,7 @@ func Test_parsing_an_ipv6_addr_to_a_winrm_endpoint(t *testing.T) {
 
 func Test_parsing_an_ipv6_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) {
 	certBytes := []byte{1, 2, 3, 4, 5, 6}
-	endpoint, err := parseEndpoint("[2402:9900:111:1373:192a:6b0e:7c46:2563]", true, true, certBytes, 0)
+	endpoint, err := parseEndpoint("[2402:9900:111:1373:192a:6b0e:7c46:2563]", true, true, "foo", certBytes, 0)
 
 	if err != nil {
 		t.Fatalf("Should not have been an error: %v", err)
@@ -186,7 +186,7 @@ func Test_parsing_an_ipv6_addr_without_a_port_to_a_winrm_endpoint(t *testing.T) 
 }
 
 func Test_parsing_an_empty_addr_to_a_winrm_endpoint(t *testing.T) {
-	endpoint, err := parseEndpoint("", false, false, nil, 0)
+	endpoint, err := parseEndpoint("", false, false, "foo", nil, 0)
 
 	if endpoint != nil {
 		t.Error("Endpoint should be nil")
@@ -197,7 +197,7 @@ func Test_parsing_an_empty_addr_to_a_winrm_endpoint(t *testing.T) {
 }
 
 func Test_parsing_an_addr_with_a_bad_port(t *testing.T) {
-	endpoint, err := parseEndpoint("1.2.3.4:ABCD", false, false, nil, 0)
+	endpoint, err := parseEndpoint("1.2.3.4:ABCD", false, false, "foo", nil, 0)
 
 	if endpoint != nil {
 		t.Error("Endpoint should be nil")

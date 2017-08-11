@@ -3,3 +3,6 @@ bin/
 
 # files used for testing
 files/
+
+# Dev
+.idea

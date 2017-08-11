@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/masterzen/winrm"
+	"github.com/grubernaut/winrm"
 	"github.com/nu7hatch/gouuid"
 )
 
