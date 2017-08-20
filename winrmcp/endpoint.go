@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grubernaut/winrm"
+	"github.com/masterzen/winrm"
 )
 
 func parseEndpoint(addr string, https bool, insecure bool, tlsServerName string, caCert []byte, timeout time.Duration) (*winrm.Endpoint, error) {

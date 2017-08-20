@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dylanmei/iso8601"
-	"github.com/grubernaut/winrm"
+	"github.com/masterzen/winrm"
 )
 
 type Winrmcp struct {

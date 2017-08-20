@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/grubernaut/winrm"
+	"github.com/masterzen/winrm"
 )
 
 type FileItem struct {
