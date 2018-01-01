@@ -176,12 +176,20 @@ func cleanupContent(client *winrm.Client, filePath string) error {
 	}
 
 	defer shell.Close()
-	script := fmt.Sprintf(`Remove-Item %s -ErrorAction SilentlyContinue`, filePath)
+	script := fmt.Sprintf(`
+		$tmp_file_path = [System.IO.Path]::GetFullPath("%s")
+		if (Test-Path $tmp_file_path) {
+			Remove-Item $tmp_file_path -ErrorAction SilentlyContinue
+		} else {
+			echo $null > $tmp_file_path
+		}
+	`, filePath)
 
 	cmd, err := shell.Execute(winrm.Powershell(script))
 	if err != nil {
 		return err
 	}
+
 	defer cmd.Close()
 
 	var wg sync.WaitGroup
