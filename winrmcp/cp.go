@@ -180,8 +180,6 @@ func cleanupContent(client *winrm.Client, filePath string) error {
 		$tmp_file_path = [System.IO.Path]::GetFullPath("%s")
 		if (Test-Path $tmp_file_path) {
 			Remove-Item $tmp_file_path -ErrorAction SilentlyContinue
-		} else {
-			echo $null > $tmp_file_path
 		}
 	`, filePath)
 
@@ -189,7 +187,6 @@ func cleanupContent(client *winrm.Client, filePath string) error {
 	if err != nil {
 		return err
 	}
-
 	defer cmd.Close()
 
 	var wg sync.WaitGroup
